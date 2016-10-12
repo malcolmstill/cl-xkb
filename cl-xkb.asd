@@ -1,9 +1,9 @@
 ;;;; cl-xkb.asd
 
 (asdf:defsystem #:cl-xkb
-  :description "Describe cl-xkb here"
+  :description "Common Lisp wrapper for libxkb"
   :author "Malcolm Still"
-  :license "Specify license here"
+  :license "BSD3"
   :depends-on (#:cffi)
   :serial t
   :components ((:file "package")
