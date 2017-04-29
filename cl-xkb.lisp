@@ -70,6 +70,24 @@
       (foreign-free keysym-name)
       name)))
 
+(defcfun "xkb_keysym_from_name" :uint32
+  (name :string)
+  (flags :uint32))
+
+(defun get-keysym-from-name (name &key case-insensitive)
+  (with-foreign-string (fname name)
+    (xkb-keysym-from-name fname (if case-insensitive 1 0))))
+
+(defcfun "xkb_keysym_to_utf8" :int
+  (keysym :uint32)
+  (buffer :string)
+  (size :uint32))
+
+(defun get-keysym-character (keysym)
+  (let ((utf8-string (with-foreign-pointer-as-string (char 16)
+		       (xkb-keysym-to-utf8 keysym char 16)
+		       (break char))))
+    (aref utf8-string 0)))
 
 (defcfun "xkb_state_mod_name_is_active" :int
   (state :pointer)
@@ -105,3 +123,13 @@
 
 (defcfun "xkb_state_unref" :void
   (state :pointer))
+
+
+;;; Not XKB but they do deal with keysyms
+;;; From ctypes.h
+
+(defcfun "toupper" :int
+  (c :int))
+
+(defcfun "tolower" :int
+  (c :int))

@@ -12,6 +12,10 @@
    xkb-state-key-get-one-sym
    ;;xkb-keysym-get-name
    get-keysym-name
+   ;;xkb-keysym-from-name
+   get-keysym-from-name
+   ;;xkb-keysym-to-utf8
+   get-keysym-character
    xkb-state-mod-name-is-active
    xkb-keymap-key-by-name
    xkb-keymap-min-keycode
@@ -19,5 +23,10 @@
    xkb-state-update-key
    xkb-state-serialize-mods
    xkb-state-serialize-layout
-   xkb-state-unref))
+   xkb-state-unref
+   ;; Not XKB but they do deal with keysyms
+   ;; From ctypes.h
+   toupper
+   tolower
+   ))
    
