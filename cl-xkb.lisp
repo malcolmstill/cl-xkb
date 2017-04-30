@@ -85,8 +85,7 @@
 
 (defun get-keysym-character (keysym)
   (let ((utf8-string (with-foreign-pointer-as-string (char 16)
-		       (xkb-keysym-to-utf8 keysym char 16)
-		       (break char))))
+		       (xkb-keysym-to-utf8 keysym char 16))))
     (aref utf8-string 0)))
 
 (defcfun "xkb_state_mod_name_is_active" :int
