@@ -5,11 +5,19 @@
 
 ## Status
 
-`cl-xkb` is being developed primarily in support of [ulubis](https://github.com/malcolmstill/ulubis) and is therefor feature incomplete. Pull requests adding more of the API are more than welcome.
+`cl-xkb` started development to support [ulubis](https://github.com/malcolmstill/ulubis). The library currently supports these xkb [modules](https://xkbcommon.org/doc/current/modules.html):
 
-## Requiremnts
+- [Keysyms](https://xkbcommon.org/doc/current/group__keysyms.html)
+- [Library Context](https://xkbcommon.org/doc/current/group__context.html)
+- [Keymap Creation](https://xkbcommon.org/doc/current/group__keymap.html)
+- [Keymap Components](https://xkbcommon.org/doc/current/group__components.html)
+- [Keyboard State](https://xkbcommon.org/doc/current/group__state.html)
 
-`cl-xkb` requires libxkbcommon and cffi. It is likely that libxkbcommon already exists on your Linux installation if it is recent.
+Pull requests adding more of the API are more than welcome.
+
+## Requirements
+
+`cl-xkb` requires libxkbcommon and CFFI. It may require development files from your distribution -- the package should usually be called something like `libxkbcommon-dev`
 
 ## Installation
 

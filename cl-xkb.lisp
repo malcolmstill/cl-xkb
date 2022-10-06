@@ -7,6 +7,23 @@
 
 (use-foreign-library xkb)
 
+(defmacro %definline (name lambda-list &body body)
+  `(progn
+     (declaim (inline ,name))
+     (defun ,name ,lambda-list ,@body)))
+
+(defmacro %define-ref-and-unref (prefix param-name)
+  (let ((prefix* (eval prefix)))
+    `(progn
+       (defcfun ,(concatenate 'string prefix* "_ref") :pointer
+         (,param-name :pointer))
+       (defcfun ,(concatenate 'string prefix* "_unref") :void
+         (,param-name :pointer)))))
+
+
+
+;; Ubiquitous Types, Constants
+
 (defcstruct xkb-rule-names
   (rules :string)
   (model :string)
@@ -14,142 +31,401 @@
   (variant :string)
   (options :string))
 
-(defcfun "xkb_context_new" :pointer
-  (flags :uint32))
+(defctype xkb-keycode :uint32)
+(defctype xkb-keysym :uint32)
+(defctype xkb-layout-index :uint32)
+(defctype xkb-layout-mask :uint32)
+(defctype xkb-level-index :uint32)
+(defctype xkb-mod-index :uint32)
+(defctype xkb-mod-mask :uint32)
+(defctype xkb-led-index :uint32)
+(defctype xkb-led-mask :uint32)
 
-(defcfun "xkb_context_unref" :void
-  (context :pointer))
+(defconstant +xkb-keycode-invalid+ #xffffffff)
+(defconstant +xkb-layout-invalid+ #xffffffff)
+(defconstant +xkb-level-invalid+ #xffffffff)
+(defconstant +xkb-mod-invalid+ #xffffffff)
+(defconstant +xkb-led-invalid+ #xffffffff)
+(defconstant +xkb-keycode-max+ (1- #xffffffff))
 
-(defcfun "xkb_keymap_new_from_string" :pointer
-  (context :pointer)
-  (string :string)
-  (format :int)
-  (flags :int))
+(%definline xkb-keycode-is-legal-ext-p (key)
+  (<= key +xkb-keycode-max+))
+(%definline xkb-keycode-is-legal-x11-p (key)
+  (and (>= key 8) (<= key 255)))
 
-(defcfun "xkb_keymap_new_from_names" :pointer
-  (context :pointer)
-  (names :pointer)
-  (flags :int))
+
 
-;;(defcfun "xkb_keymap_get_as_string" :string
- ;; (keymap :pointer)
- ;; (format :int32))
+;; Keysyms
 
-(defun new-keymap-from-names (ctx rules model layout variant options)
-  (let* (;;(ctx (xkb-context-new 0))
-	 (names (foreign-alloc '(:struct xkb-rule-names)))
-	 (rules-ptr (foreign-alloc :char :count (+ (length rules) 1)))
-	 (model-ptr (foreign-alloc :char :count (+ (length model) 1)))
-	 (layout-ptr (foreign-alloc :char :count (+ (length layout) 1)))
-	 (variant-ptr (foreign-alloc :char :count (+ (length variant) 1)))
-	 (options-ptr (foreign-alloc :char :count (+ (length options) 1))))
-    (lisp-string-to-foreign rules rules-ptr (+ (length rules) 1))
-    (lisp-string-to-foreign model model-ptr (+ (length model) 1))
-    (lisp-string-to-foreign layout layout-ptr (+ (length layout) 1))
-    (lisp-string-to-foreign variant variant-ptr (+ (length variant) 1))
-    (lisp-string-to-foreign options options-ptr (+ (length options) 1))
-    (setf (foreign-slot-value names '(:struct xkb-rule-names) 'rules) rules-ptr)
-    (setf (foreign-slot-value names '(:struct xkb-rule-names) 'model) model-ptr)
-    (setf (foreign-slot-value names '(:struct xkb-rule-names) 'layout) layout-ptr)
-    (setf (foreign-slot-value names '(:struct xkb-rule-names) 'variant) variant-ptr)
-    (setf (foreign-slot-value names '(:struct xkb-rule-names) 'options) options-ptr)
-    (let ((keymap (xkb-keymap-new-from-names ctx names 0)))
-      (foreign-free names)
-      keymap)))
-
-
-;;(new-keymap-from-names "" "pc105" "gb" "qwerty" "")
-
-(defcfun "xkb_state_new" :pointer
-  (keymap :pointer))
-
-(defcfun "xkb_state_key_get_one_sym" :uint32
-  (state :pointer)
-  (keycode :uint32))
-
-(defcfun "xkb_state_key_get_utf8" :int
-  (state :pointer)
-  (key :uint32)
-  (buffer :string)
-  (size :size))
+(defbitfield xkb-keysym-flags
+  (:no-flags 0)
+  :case-insensitive)
 
 (defcfun "xkb_keysym_get_name" :int
-  (keysym :uint32)
+  (keysym xkb-keysym-flags)
   (buffer :string)
   (size :size))
 
 (defun get-keysym-name (keysym)
-  (let* ((keysym-name (foreign-alloc :char :count 64)))
-    (xkb-keysym-get-name keysym keysym-name 64)
-    (let ((name (foreign-string-to-lisp keysym-name)))
-      (foreign-free keysym-name)
-      name)))
+  (with-foreign-pointer-as-string (cstr 64)
+    (xkb-keysym-get-name keysym cstr 64)))
 
-(defcfun "xkb_keysym_from_name" :uint32
+(defcfun "xkb_keysym_from_name" xkb-keysym
   (name :string)
-  (flags :uint32))
+  (flags xkb-keysym-flags))
 
 (defun get-keysym-from-name (name &key case-insensitive)
-  (with-foreign-string (fname name)
-    (xkb-keysym-from-name fname (if case-insensitive 1 0))))
+  (with-foreign-string (cname name)
+    (xkb-keysym-from-name cname (when case-insensitive '(:case-insensitive)))))
 
 (defcfun "xkb_keysym_to_utf8" :int
-  (keysym :uint32)
+  (keysym xkb-keysym)
   (buffer :string)
-  (size :uint32))
+  (size :size))
 
 (defun get-keysym-character (keysym)
-  (let ((utf8-string (with-foreign-pointer-as-string (char 16)
-		       (xkb-keysym-to-utf8 keysym char 16))))
-    (aref utf8-string 0)))
+  (char (with-foreign-pointer-as-string (char 16)
+          (xkb-keysym-to-utf8 keysym char 16))
+        0))
 
-(defcfun "xkb_state_mod_name_is_active" :int
-  (state :pointer)
-  (modifier :string)
-  (type :int)) ;; effective 8
+(defcfun "xkb_keysym_to_utf32" :uint32
+  (keysym xkb-keysym))
 
-(defcfun "xkb_keymap_get_as_string" :string
+(defcfun "xkb_utf32_to_keysym" xkb-keysym
+  (ucs :uint32))
+
+(defcfun "xkb_keysym_to_upper" xkb-keysym
+  (ks xkb-keysym))
+
+(defcfun "xkb_keysym_to_lower" xkb-keysym
+  (ks xkb-keysym))
+
+
+
+;; Library Context
+
+(defbitfield xkb-context-flags
+  (:no-flags 0)
+  no-default-includes
+  no-environment-names)
+
+(defcfun "xkb_context_new" :pointer
+  (flags xkb-context-flags))
+
+(%define-ref-and-unref "xkb_context" context)
+
+(defcfun "xkb_context_set_user_data" :void
+  (context :pointer)
+  (user-data :pointer))
+
+(defcfun "xkb_context_get_user_data" :pointer
+  (context :pointer))
+
+
+
+;; Include Paths
+;; TODO <https://xkbcommon.org/doc/current/group__include-path.html>
+
+
+
+;; Logging Handling
+;; TODO <https://xkbcommon.org/doc/current/group__logging.html>
+
+
+
+;; Keymap Creation
+
+(defbitfield xkb-keymap-compile-flags
+  (:no-flags 0))
+
+(defcenum xkb-keymap-format
+  (:text-v1 1))
+
+(defconstant +xkb-keymap-use-original-format+
+             (1- (ash 1 (cffi:foreign-type-size 'xkb-keymap-format))))
+
+(defcfun "xkb_keymap_new_from_names" :pointer
+  (context :pointer)
+  (names (:pointer (:struct xkb-rule-names)))
+  (flags xkb-keymap-compile-flags))
+
+(defun new-keymap-from-names (ctx rules model layout variant options)
+  (with-foreign-object (names '(:struct xkb-rule-names))
+    (with-foreign-strings ((rules-ptr rules)
+                           (model-ptr model)
+                           (layout-ptr layout)
+                           (variant-ptr variant)
+                           (options-ptr options))
+      (setf (foreign-slot-value names '(:struct xkb-rule-names) 'rules) rules-ptr
+            (foreign-slot-value names '(:struct xkb-rule-names) 'model) model-ptr
+            (foreign-slot-value names '(:struct xkb-rule-names) 'layout) layout-ptr
+            (foreign-slot-value names '(:struct xkb-rule-names) 'variant) variant-ptr
+            (foreign-slot-value names '(:struct xkb-rule-names) 'options) options-ptr)
+
+      (xkb-keymap-new-from-names ctx names ()))))
+
+(defcfun "xkb_keymap_new_from_file" :pointer
+  (context :pointer)
+  (file :pointer)
+  (format xkb-keymap-format)
+  (flags xkb-keymap-compile-flags))
+
+(defcfun "xkb_keymap_new_from_string" :pointer
+  (context :pointer)
+  (string :string)
+  (format xkb-keymap-format)
+  (flags xkb-keymap-compile-flags))
+
+(defcfun "xkb_keymap_new_from_buffer" :pointer
+  (context :pointer)
+  (buffer :string)
+  (length :size)
+  (format xkb-keymap-format)
+  (flags xkb-keymap-compile-flags))
+
+(%define-ref-and-unref "xkb_keymap" keymap)
+
+;; TODO define xkb_keymap_get_as_string, whose result must be foreign-free'd.
+;; (defcfun "xkb_keymap_get_as_string" :string
+;;   (keymap :pointer)
+;;   (format xkb-keymap-format))
+
+
+
+;; Keymap Components
+
+(defcfun "xkb_keymap_min_keycode" xkb-keycode
+  (keymap :pointer))
+
+(defcfun "xkb_keymap_max_keycode" xkb-keycode
+  (keymap :pointer))
+
+(defcfun "xkb_keymap_key_for_each" :void
   (keymap :pointer)
-  (format :int)) ;; 1
+  (iter :pointer)
+  (data :pointer))
 
-(defcfun "xkb_keymap_key_by_name" :uint32
+(defcfun "xkb_keymap_key_get_name" :string
+  (keymap :pointer)
+  (key xkb-keycode))
+
+(defcfun "xkb_keymap_key_by_name" xkb-keycode
   (keymap :pointer)
   (name :string))
 
-(defcfun "xkb_keymap_min_keycode" :uint32
+(defcfun "xkb_keymap_num_mods" xkb-mod-index
   (keymap :pointer))
 
-(defcfun "xkb_keymap_max_keycode" :uint32
+(defcfun "xkb_keymap_mod_get_name" :string
+  (keymap :pointer)
+  (idx xkb-mod-index))
+
+(defcfun "xkb_keymap_mod_get_index" xkb-mod-index
+  (keymap :pointer)
+  (name :string))
+
+(defcfun "xkb_keymap_num_layouts" xkb-layout-index
   (keymap :pointer))
 
-(defcfun "xkb_keymap_unref" :void
+(defcfun "xkb_keymap_layout_get_name" :string
+  (keymap :pointer)
+  (idx xkb-layout-index))
+
+(defcfun "xkb_keymap_layout_get_index" xkb-layout-index
+  (keymap :pointer)
+  (name :string))
+
+(defcfun "xkb_keymap_num_leds" xkb-led-index
   (keymap :pointer))
 
-(defcfun "xkb_state_update_key" :uint32
-  (state :pointer)
-  (key :uint32)
-  (direction :int))
+(defcfun "xkb_keymap_led_get_name" :string
+  (keymap :pointer)
+  (idx xkb-led-index))
 
-(defcfun "xkb_state_update_mask" :int
-  (state :pointer)
-  (depressed-mods :uint32)
-  (latched-mods :uint32)
-  (locked-mods :uint32)
-  (depressed-layout :uint32)
-  (latched-layout :uint32)
-  (locked-layout :uint32))
+(defcfun "xkb_keymap_led_get_index" xkb-led-index
+  (keymap :pointer)
+  (name :string))
 
-(defcfun "xkb_state_serialize_mods" :uint32
-  (state :pointer)
-  (components :int))
+(defcfun "xkb_keymap_num_levels_for_key" xkb-level-index
+  (keymap :pointer)
+  (key xkb-keycode)
+  (layout xkb-layout-index))
 
-(defcfun "xkb_state_serialize_layout" :uint32
-  (state :pointer)
-  (components :int))
+(defcfun "xkb_keymap_key_get_mods_for_level" :size
+  (keymap :pointer)
+  (key xkb-keycode)
+  (layout xkb-layout-index)
+  (level xkb-level-index)
+  (masks-out (:pointer xkb-mod-mask))
+  (masks-size :size))
 
-(defcfun "xkb_state_unref" :void
+(defcfun "xkb_keymap_key_get_syms_by_level" :int
+  (keymap :pointer)
+  (key xkb-keycode)
+  (layout xkb-layout-index)
+  (level xkb-level-index)
+  (syms-out (:pointer (:pointer xkb-keysym))))
+
+(defcfun "xkb_keymap_key_repeats" :int
+  (keymap :pointer)
+  (key xkb-keycode))
+
+
+
+;; Keyboard State
+
+(defcenum xkb-key-direction
+  :up
+  :down)
+
+(defbitfield xkb-state-component
+  :mods-depressed
+  :mods-latched
+  :mods-locked
+  :mods-effective
+  :layout-depressed
+  :layout-latched
+  :layout-locked
+  :layout-effective
+  :leds)
+
+(defbitfield xkb-state-match
+  :any
+  :all
+  (:non-exclusive #.(ash 1 16)))
+
+(defcenum xkb-consumed-mode
+  :xkb :gtk)
+
+(defcfun "xkb_state_new" :pointer
+  (keymap :pointer))
+
+(%define-ref-and-unref "xkb_state" state)
+
+(defcfun "xkb_state_get_keymap" :pointer
   (state :pointer))
 
+(defcfun "xkb_state_update_key" xkb-state-component
+  (state :pointer)
+  (key xkb-keycode)
+  (direction xkb-key-direction))
+
+(defcfun "xkb_state_update_mask" xkb-state-component
+  (state :pointer)
+  (depressed-mods xkb-mod-mask)
+  (latched-mods xkb-mod-mask)
+  (locked-mods xkb-mod-mask)
+  (depressed-layout xkb-layout-index)
+  (latched-layout xkb-layout-index)
+  (locked-layout xkb-layout-index))
+
+(defcfun "xkb_state_key_get_syms" :int
+  (state :pointer)
+  (key xkb-keycode)
+  (syms-out (:pointer (:pointer xkb-keysym))))
+
+(defcfun "xkb_state_key_get_utf8" :int
+  (state :pointer)
+  (key xkb-keycode)
+  (buffer :string)
+  (size :size))
+
+(defcfun "xkb_state_key_get_utf32" :uint32
+  (state :pointer)
+  (key xkb-keycode))
+
+(defcfun "xkb_state_key_get_one_sym" xkb-keysym
+  (state :pointer)
+  (key xkb-keycode))
+
+(defcfun "xkb_state_key_get_layout" xkb-layout-index
+  (state :pointer)
+  (key xkb-keycode))
+
+(defcfun "xkb_state_key_get_level" xkb-level-index
+  (state :pointer)
+  (key xkb-keycode)
+  (layout xkb-layout-index))
+
+(defcfun "xkb_state_serialize_mods" xkb-mod-mask
+  (state :pointer)
+  (components xkb-state-component))
+
+(defcfun "xkb_state_serialize_layout" xkb-layout-mask
+  (state :pointer)
+  (components xkb-state-component))
+
+(defcfun "xkb_state_mod_name_is_active" :int
+  (state :pointer)
+  (name :string)
+  (type xkb-state-component))
+
+(defcfun "xkb_state_mod_names_are_active" :int
+  (state :pointer)
+  (type xkb-state-component)
+  (match xkb-state-match)
+  &rest)
+
+(defcfun "xkb_state_mod_index_is_active" :int
+  (state :pointer)
+  (idx xkb-mod-index)
+  (type xkb-state-component))
+
+(defcfun "xkb_state_mod_indices_are_active" :int
+  (state :pointer)
+  (type xkb-state-component)
+  (match xkb-state-match)
+  &rest)
+
+(defcfun "xkb_state_key_get_consumed_mods2" xkb-mod-mask
+  (staet :pointer)
+  (key xkb-keycode)
+  (mode xkb-consumed-mode))
+
+(defcfun "xkb_state_key_get_consumed_mods" xkb-mod-mask
+  (state :pointer)
+  (key xkb-keycode))
+
+(defcfun "xkb_state_mod_index_is_consumed2" :int
+  (state :pointer)
+  (key xkb-keycode)
+  (idx xkb-mod-index)
+  (mode xkb-consumed-mode))
+
+(defcfun "xkb_state_mod_index_is_consumed" :int
+  (state :pointer)
+  (key xkb-keycode)
+  (idx xkb-mod-index))
+
+(defcfun "xkb_state_mod_mask_remove_consumed" xkb-mod-mask
+  (state :pointer)
+  (key xkb-keycode)
+  (mask xkb-mod-mask))
+
+(defcfun "xkb_state_layout_name_is_active" :int
+  (state :pointer)
+  (name :string)
+  (type xkb-state-component))
+
+(defcfun "xkb_state_layout_index_is_active" :int
+  (state :pointer)
+  (idx xkb-layout-index)
+  (type xkb-state-component))
+
+(defcfun "xkb_state_led_name_is_active" :int
+  (state :pointer)
+  (name :string))
+
+(defcfun "xkb_state_led_index_is_active" :int
+  (state :pointer)
+  (idx xkb-led-index))
+
+
+
+;; Compose and dead-keys support
+;; TODO <https://xkbcommon.org/doc/current/group__compose.html>
+
+
 
 ;;; Not XKB but they do deal with keysyms
 ;;; From ctypes.h
