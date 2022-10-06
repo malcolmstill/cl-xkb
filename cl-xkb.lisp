@@ -17,10 +17,19 @@
 (defcfun "xkb_context_new" :pointer
   (flags :uint32))
 
+(defcfun "xkb_context_unref" :void
+  (context :pointer))
+
+(defcfun "xkb_keymap_new_from_string" :pointer
+  (context :pointer)
+  (string :string)
+  (format :int)
+  (flags :int))
+
 (defcfun "xkb_keymap_new_from_names" :pointer
   (context :pointer)
   (names :pointer)
-  (flags :uint32))
+  (flags :int))
 
 ;;(defcfun "xkb_keymap_get_as_string" :string
  ;; (keymap :pointer)
@@ -58,10 +67,16 @@
   (state :pointer)
   (keycode :uint32))
 
+(defcfun "xkb_state_key_get_utf8" :int
+  (state :pointer)
+  (key :uint32)
+  (buffer :string)
+  (size :size))
+
 (defcfun "xkb_keysym_get_name" :int
   (keysym :uint32)
   (buffer :string)
-  (size :uint32))
+  (size :size))
 
 (defun get-keysym-name (keysym)
   (let* ((keysym-name (foreign-alloc :char :count 64)))
@@ -107,10 +122,22 @@
 (defcfun "xkb_keymap_max_keycode" :uint32
   (keymap :pointer))
 
-(defcfun "xkb_state_update_key" :int
+(defcfun "xkb_keymap_unref" :void
+  (keymap :pointer))
+
+(defcfun "xkb_state_update_key" :uint32
   (state :pointer)
   (key :uint32)
   (direction :int))
+
+(defcfun "xkb_state_update_mask" :int
+  (state :pointer)
+  (depressed-mods :uint32)
+  (latched-mods :uint32)
+  (locked-mods :uint32)
+  (depressed-layout :uint32)
+  (latched-layout :uint32)
+  (locked-layout :uint32))
 
 (defcfun "xkb_state_serialize_mods" :uint32
   (state :pointer)
