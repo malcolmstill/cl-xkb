@@ -27,11 +27,8 @@
     #:xkb-keysym-flags
 
     #:xkb-keysym-get-name
-    #:get-keysym-name
     #:xkb-keysym-from-name
-    #:get-keysym-from-name
     #:xkb-keysym-to-utf8
-    #:get-keysym-character
     #:xkb-keysym-to-utf32
     #:xkb-utf32-to-keysym
     #:xkb-keysym-to-upper

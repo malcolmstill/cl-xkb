@@ -30,6 +30,17 @@
      (defun (setf ,name) ,(cons (car (last args)) (butlast args))
        (,writer-name ,@args))))
 
+;; Xkb UTF-8 string readers return the required size of the buffer,
+;; regardless of the actual buffer size.
+(defmacro %define-utf8-string-reader (name reader-name (&rest args))
+  (let ((size (gensym (symbol-name '#:size)))
+        (string-buffer (gensym (symbol-name '#:string-buffer))))
+    `(defun ,name ,args
+       (let ((,size (1+ (,reader-name ,@args (cffi:null-pointer) 0))))
+         (with-foreign-pointer-as-string (,string-buffer ,size :encoding :utf-8)
+           (when (zerop (,reader-name ,@args ,string-buffer ,size))
+             (return-from ,name)))))))
+
 
 
 ;; Ubiquitous Types, Constants
@@ -71,31 +82,29 @@
   (:no-flags 0)
   :case-insensitive)
 
-(defcfun "xkb_keysym_get_name" :int
+(defcfun ("xkb_keysym_get_name" %xkb-keysym-get-name) :int
   (keysym xkb-keysym-flags)
   (buffer :string)
   (size :size))
 
-(defun get-keysym-name (keysym)
-  (with-foreign-pointer-as-string (cstr 64)
-    (xkb-keysym-get-name keysym cstr 64)))
+(defun xkb-keysym-get-name (keysym)
+  (with-foreign-pointer-as-string (string-buffer #1=64)
+    (when (minusp (%xkb-keysym-get-name keysym string-buffer #1#))
+      (return-from xkb-keysym-get-name))))
 
 (defcfun "xkb_keysym_from_name" xkb-keysym
   (name :string)
   (flags xkb-keysym-flags))
 
-(defun get-keysym-from-name (name &key case-insensitive)
-  (with-foreign-string (cname name)
-    (xkb-keysym-from-name cname (when case-insensitive '(:case-insensitive)))))
-
-(defcfun "xkb_keysym_to_utf8" :int
+(defcfun ("xkb_keysym_to_utf8" %xkb-keysym-to-utf8) :int
   (keysym xkb-keysym)
   (buffer :string)
   (size :size))
 
-(defun get-keysym-character (keysym)
-  (char (with-foreign-pointer-as-string (char 16)
-          (xkb-keysym-to-utf8 keysym char 16))
+(defun xkb-keysym-to-utf8 (keysym)
+  (char (with-foreign-pointer-as-string (string-buffer #1=7 :encoding :utf-8)
+          (when (zerop (%xkb-keysym-to-utf8 keysym string-buffer #1#))
+            (return-from xkb-keysym-to-utf8)))
         0))
 
 (defcfun "xkb_keysym_to_utf32" :uint32
@@ -163,6 +172,7 @@
 
 
 ;; Logging Handling
+;; TODO <https://xkbcommon.org/doc/current/group__logging.html>
 
 (defcenum xkb-log-level
   (:critical 10)
@@ -254,7 +264,7 @@
 (%define-ref-and-unref "xkb_keymap" keymap)
 
 ;; TODO define xkb_keymap_get_as_string, whose result must be foreign-free'd.
-;; (defcfun "xkb_keymap_get_as_string" :string
+;; (defcfun "xkb_keymap_get_as_string" :pointer
 ;;   (keymap :pointer)
 ;;   (format xkb-keymap-format))
 
@@ -392,11 +402,14 @@
   (key xkb-keycode)
   (syms-out (:pointer (:pointer xkb-keysym))))
 
-(defcfun "xkb_state_key_get_utf8" :int
+(defcfun ("xkb_state_key_get_utf8" %xkb-state-key-get-utf8) :int
   (state :pointer)
   (key xkb-keycode)
   (buffer :string)
   (size :size))
+
+(%define-utf8-string-reader
+  xkb-state-key-get-utf8 %xkb-state-key-get-utf8 (state key))
 
 (defcfun "xkb_state_key_get_utf32" :uint32
   (state :pointer)
