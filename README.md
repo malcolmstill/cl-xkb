@@ -9,9 +9,12 @@
 
 - [Keysyms](https://xkbcommon.org/doc/current/group__keysyms.html)
 - [Library Context](https://xkbcommon.org/doc/current/group__context.html)
+- [Include Paths](https://xkbcommon.org/doc/current/group__include-path.html)
+- [Logging Handling](https://xkbcommon.org/doc/current/group__logging.html)
 - [Keymap Creation](https://xkbcommon.org/doc/current/group__keymap.html)
 - [Keymap Components](https://xkbcommon.org/doc/current/group__components.html)
 - [Keyboard State](https://xkbcommon.org/doc/current/group__state.html)
+- [Compose and dead-keys support](https://xkbcommon.org/doc/current/group__compose.html)
 
 Pull requests adding more of the API are more than welcome.
 

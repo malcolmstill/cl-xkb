@@ -27,11 +27,8 @@
     #:xkb-keysym-flags
 
     #:xkb-keysym-get-name
-    #:get-keysym-name
     #:xkb-keysym-from-name
-    #:get-keysym-from-name
     #:xkb-keysym-to-utf8
-    #:get-keysym-character
     #:xkb-keysym-to-utf32
     #:xkb-utf32-to-keysym
     #:xkb-keysym-to-upper
@@ -42,8 +39,28 @@
     #:xkb-context-new
     #:xkb-context-ref
     #:xkb-context-unref
-    #:xkb-context-set-user-date
-    #:xkb-context-get-user-date
+    #:xkb-context-set-user-data
+    #:xkb-context-get-user-data
+    #:xkb-context-user-data
+
+    ;; Include Paths
+    #:xkb-context-include-path-append
+    #:xkb-context-include-path-append-default
+    #:xkb-context-include-path-reset-defaults
+    #:xkb-context-include-path-clear
+    #:xkb-context-num-include-paths
+    #:xkb-context-include-path-get
+
+    ;; Logging Handling
+    #:xkb-log-level
+
+    #:xkb-context-set-log-level
+    #:xkb-context-get-log-level
+    #:xkb-context-log-level
+    #:xkb-context-set-log-verbosity
+    #:xkb-context-get-log-verbosity
+    #:xkb-context-log-verbosity
+    #:xkb-context-set-log-fn
 
     ;; Keymap Creation
     #:xkb-keymap-compile-flags
@@ -112,6 +129,29 @@
     #:xkb-state-layout-index-is-active
     #:xkb-state-led-name-is-active
     #:xkb-state-led-index-is-active
+
+    ;; Compose and dead-keys support
+    #:xkb-compose-compile-flags
+    #:xkb-compose-format
+    #:xkb-compose-state-flags
+    #:xkb-compose-status
+    #:xkb-compose-feed-result
+
+    #:xkb-compose-table-new-from-locale
+    #:xkb-compose-table-new-from-file
+    #:xkb-compose-table-new-from-buffer
+    #:xkb-compose-table-ref
+    #:xkb-compose-table-unref
+
+    #:xkb-compose-state-new
+    #:xkb-compose-state-ref
+    #:xkb-compose-state-unref
+    #:xkb-compose-state-get-compose-table
+    #:xkb-compose-state-feed
+    #:xkb-compose-state-reset
+    #:xkb-compose-state-get-status
+    #:xkb-compose-state-get-utf8
+    #:xkb-compose-state-get-one-sym
 
     ;; Not XKB but they do deal with keysyms
     ;; From ctypes.h
