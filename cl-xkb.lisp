@@ -124,12 +124,55 @@
 
 
 ;; Include Paths
-;; TODO <https://xkbcommon.org/doc/current/group__include-path.html>
+
+(defcfun "xkb_context_include_path_append" :int
+  (context :pointer)
+  (path :string))
+
+(defcfun "xkb_context_include_path_append_default" :int
+  (context :pointer))
+
+(defcfun "xkb_context_include_path_reset_defaults" :int
+  (context :pointer))
+
+(defcfun "xkb_context_include_path_clear" :void
+  (context :pointer))
+
+(defcfun "xkb_context_num_include_paths" :uint
+  (context :pointer))
+
+(defcfun "xkb_context_include_path_get" :string
+  (context :pointer)
+  (index :uint))
 
 
 
 ;; Logging Handling
-;; TODO <https://xkbcommon.org/doc/current/group__logging.html>
+
+(defcenum xkb-log-level
+  (:critical 10)
+  (:error 20)
+  (:warning 30)
+  (:info 40)
+  (:debug 50))
+
+(defcfun "xkb_context_set_log_level" :void
+  (context :pointer)
+  (level xkb-log-level))
+
+(defcfun "xkb_context_get_log_level" xkb-log-level
+  (context :pointer))
+
+(defcfun "xkb_context_set_log_verbosity" :void
+  (context :pointer)
+  (verbosity :int))
+
+(defcfun "xkb_context_get_log_verbosity" :int
+  (context :pointer))
+
+(defcfun "xkb_context_set_log_fn" :void
+  (context :pointer)
+  (log-fn :pointer))
 
 
 
@@ -423,7 +466,77 @@
 
 
 ;; Compose and dead-keys support
-;; TODO <https://xkbcommon.org/doc/current/group__compose.html>
+
+(defbitfield xkb-compose-compile-flags
+  (:no-flags 0))
+
+(defcenum xkb-compose-format
+  (:text-v1 1))
+
+(defbitfield xkb-compose-state-flags
+  (:no-flags 0))
+
+(defcenum xkb-compose-status
+  :nothing
+  :composing
+  :composed
+  :cancelled)
+
+(defcenum xkb-compose-feed-result
+  :ignored
+  :accepted)
+
+(defcfun "xkb_compose_table_new_from_locale" :pointer
+  (context :pointer)
+  (locale :String)
+  (flags xkb-compose-compile-flags))
+
+(defcfun "xkb_compose_table_new_from_file" :pointer
+  (context :pointer)
+  (file :pointer)
+  (locale :string)
+  (format xkb-compose-format)
+  (flags xkb-compose-compile-flags))
+
+(defcfun "xkb_compose_table_new_from_buffer" :pointer
+  (context :pointer)
+  (buffer :string)
+  (length :size)
+  (locale :string)
+  (format xkb-compose-format)
+  (flags xkb-compose-compile-flags))
+
+(%define-ref-and-unref "xkb_compose_table" table)
+
+(defcfun "xkb_compose_state_new" :pointer
+  (table :pointer)
+  (flags xkb-compose-state-flags))
+
+(%define-ref-and-unref "xkb_compose_state" state)
+
+(defcfun "xkb_compose_state_get_compose_table" :pointer
+  (state :pointer))
+
+(defcfun "xkb_compose_state_feed" xkb-compose-feed-result
+  (state :pointer)
+  (keysym xkb-keysym))
+
+(defcfun "xkb_compose_state_reset" :void
+  (state :pointer))
+
+(defcfun "xkb_compose_state_get_status" xkb-compose-status
+  (state :pointer))
+
+(defcfun ("xkb_compose_state_get_utf8" %xkb-compose-state-get-utf8) :int
+  (state :pointer)
+  (buffer :string)
+  (size :size))
+
+(%define-utf8-string-reader
+  xkb-compose-state-get-utf8 %xkb-compose-state-get-utf8 (state))
+
+(defcfun "xkb_compose_state_get_one_sym" xkb-keysym
+  (state :pointer))
 
 
 
