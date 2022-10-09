@@ -44,6 +44,7 @@
     #:xkb-context-unref
     #:xkb-context-set-user-data
     #:xkb-context-get-user-data
+    #:xkb-context-user-data
 
     ;; Include Paths
     #:xkb-context-include-path-append
@@ -58,8 +59,10 @@
 
     #:xkb-context-set-log-level
     #:xkb-context-get-log-level
+    #:xkb-context-log-level
     #:xkb-context-set-log-verbosity
     #:xkb-context-get-log-verbosity
+    #:xkb-context-log-verbosity
     #:xkb-context-set-log-fn
 
     ;; Keymap Creation

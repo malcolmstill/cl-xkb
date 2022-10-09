@@ -20,6 +20,16 @@
        (defcfun ,(concatenate 'string prefix* "_unref") :void
          (,param-name :pointer)))))
 
+;; Define an accessor out of a pair of getter/setter bindings, to
+;; enable duality of syntax for lisp users.
+(defmacro %define-accessor (name reader-name writer-name (&rest args))
+  `(progn
+     (declaim (inline ,name (setf ,name)))
+     (defun ,name ,(butlast args)
+       (,reader-name ,@(butlast args)))
+     (defun (setf ,name) ,(cons (car (last args)) (butlast args))
+       (,writer-name ,@args))))
+
 
 
 ;; Ubiquitous Types, Constants
@@ -121,6 +131,11 @@
 (defcfun "xkb_context_get_user_data" :pointer
   (context :pointer))
 
+(%define-accessor xkb-context-user-data
+                  xkb-context-get-user-data
+                  xkb-context-set-user-data
+                  (context user-data))
+
 
 
 ;; Include Paths
@@ -163,12 +178,22 @@
 (defcfun "xkb_context_get_log_level" xkb-log-level
   (context :pointer))
 
+(%define-accessor xkb-context-log-level
+                  xkb-context-get-log-level
+                  xkb-context-set-log-level
+                  (context level))
+
 (defcfun "xkb_context_set_log_verbosity" :void
   (context :pointer)
   (verbosity :int))
 
 (defcfun "xkb_context_get_log_verbosity" :int
   (context :pointer))
+
+(%define-accessor xkb-context-log-verbosity
+                  xkb-context-get-log-verbosity
+                  xkb-context-set-log-verbosity
+                  (context verbosity))
 
 (defcfun "xkb_context_set_log_fn" :void
   (context :pointer)
