@@ -142,7 +142,7 @@
   (:text-v1 1))
 
 (defconstant +xkb-keymap-use-original-format+
-             (1- (ash 1 (cffi:foreign-type-size 'xkb-keymap-format))))
+             (1- (ash 1 (* 8 (cffi:foreign-type-size 'xkb-keymap-format)))))
 
 (defcfun "xkb_keymap_new_from_names" :pointer
   (context :pointer)
