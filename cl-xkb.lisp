@@ -2,7 +2,7 @@
 (in-package :xkb)
 
 (define-foreign-library xkb
-  (:unix (:or "/usr/lib64/libxkbcommon.so.0" "/usr/lib64/libxkbcommon.so" "/usr/lib/x86_64-linux-gnu/libxkbcommon.so"))
+  (:unix (:or "/usr/lib64/libxkbcommon.so.0" "/usr/lib64/libxkbcommon.so" "/usr/lib/x86_64-linux-gnu/libxkbcommon.so" (:default "libxkbcommon")))
   (t (:default "libxkbcommon")))
 
 (use-foreign-library xkb)
