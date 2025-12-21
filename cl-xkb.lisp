@@ -87,12 +87,7 @@
   (buffer :string)
   (size :size))
 
-(defun xkb-keysym-get-name (keysym)
-  (with-foreign-pointer-as-string (string-buffer #1=64)
-    (when (minusp (%xkb-keysym-get-name keysym string-buffer #1#))
-      (return-from xkb-keysym-get-name))))
-
-(defcfun "xkb_keysym_from_name" xkb-keysym
+(defcfun ("xkb_keysym_from_name" %xkb-keysym-from-name) xkb-keysym
   (name :string)
   (flags xkb-keysym-flags))
 
@@ -128,7 +123,7 @@
   no-default-includes
   no-environment-names)
 
-(defcfun "xkb_context_new" :pointer
+(defcfun ("xkb_context_new" %xkb-context-new) :pointer
   (flags xkb-context-flags))
 
 (%define-ref-and-unref "xkb_context" context)
@@ -222,25 +217,10 @@
 (defconstant +xkb-keymap-use-original-format+
              (1- (ash 1 (* 8 (cffi:foreign-type-size 'xkb-keymap-format)))))
 
-(defcfun "xkb_keymap_new_from_names" :pointer
+(defcfun ("xkb_keymap_new_from_names" %xkb-keymap-new-from-names) :pointer
   (context :pointer)
   (names (:pointer (:struct xkb-rule-names)))
   (flags xkb-keymap-compile-flags))
-
-(defun new-keymap-from-names (ctx rules model layout variant options)
-  (with-foreign-object (names '(:struct xkb-rule-names))
-    (with-foreign-strings ((rules-ptr rules)
-                           (model-ptr model)
-                           (layout-ptr layout)
-                           (variant-ptr variant)
-                           (options-ptr options))
-      (setf (foreign-slot-value names '(:struct xkb-rule-names) 'rules) rules-ptr
-            (foreign-slot-value names '(:struct xkb-rule-names) 'model) model-ptr
-            (foreign-slot-value names '(:struct xkb-rule-names) 'layout) layout-ptr
-            (foreign-slot-value names '(:struct xkb-rule-names) 'variant) variant-ptr
-            (foreign-slot-value names '(:struct xkb-rule-names) 'options) options-ptr)
-
-      (xkb-keymap-new-from-names ctx names ()))))
 
 (defcfun "xkb_keymap_new_from_file" :pointer
   (context :pointer)

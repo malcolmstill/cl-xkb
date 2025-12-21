@@ -12,4 +12,5 @@
   :depends-on (#:cffi)
   :serial t
   :components ((:file "package")
-               (:file "cl-xkb")))
+               (:file "cl-xkb")
+               (:file "wrappers")))
