@@ -42,6 +42,9 @@
     #:xkb-context-set-user-data
     #:xkb-context-get-user-data
     #:xkb-context-user-data
+    #:context-creation-error
+    #:with-xkb-context
+    #:with-xkb-rule-names
 
     ;; Include Paths
     #:xkb-context-include-path-append
@@ -66,6 +69,7 @@
     #:xkb-keymap-compile-flags
     #:xkb-keymap-format
     #:+xkb-keymap-use-original-format+
+    #:keymap-creation-error
 
     #:xkb-keymap-new-from-names
     #:new-keymap-from-names
@@ -75,6 +79,7 @@
     #:xkb-keymap-ref
     #:xkb-keymap-unref
     #:xkb-keymap-get-as-string
+    #:with-keymap-from-names
 
     ;; Keymap Components
     #:xkb-keymap-min-keycode
