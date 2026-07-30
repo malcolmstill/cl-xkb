@@ -120,3 +120,11 @@ the context and initalize its fields using the supplied values."
 	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) variant) ,variant-ptr
 	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) options) ,options-ptr)
 	 ,@body))))
+
+(defun xkb-keymap-get-as-string (keymap format)
+  (let ((ptr (%xkb-keymap-get-as-string keymap format)))
+    (unwind-protect
+         (foreign-string-to-lisp ptr)
+      (foreign-funcall "free"
+                       :pointer ptr
+                       :void))))
