@@ -212,7 +212,8 @@
   (:no-flags 0))
 
 (defcenum xkb-keymap-format
-  (:text-v1 1))
+  (:text-v1 1)
+  (:text-v2 2))
 
 (defconstant +xkb-keymap-use-original-format+
              (1- (ash 1 (* 8 (cffi:foreign-type-size 'xkb-keymap-format)))))
