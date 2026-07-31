@@ -212,7 +212,8 @@
   (:no-flags 0))
 
 (defcenum xkb-keymap-format
-  (:text-v1 1))
+  (:text-v1 1)
+  (:text-v2 2))
 
 (defconstant +xkb-keymap-use-original-format+
              (1- (ash 1 (* 8 (cffi:foreign-type-size 'xkb-keymap-format)))))
@@ -243,10 +244,9 @@
 
 (%define-ref-and-unref "xkb_keymap" keymap)
 
-;; TODO define xkb_keymap_get_as_string, whose result must be foreign-free'd.
-;; (defcfun "xkb_keymap_get_as_string" :pointer
-;;   (keymap :pointer)
-;;   (format xkb-keymap-format))
+(defcfun ("xkb_keymap_get_as_string" %xkb-keymap-get-as-string) :pointer
+  (keymap :pointer)
+  (format xkb-keymap-format))
 
 
 

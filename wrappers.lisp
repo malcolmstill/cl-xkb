@@ -108,15 +108,23 @@ the context and initalize its fields using the supplied values."
 	(layout-ptr (gensym "layout-ptr"))
 	(variant-ptr (gensym "variant-ptr"))
 	(options-ptr (gensym "options")))
-    `(cffi:with-foreign-object (,rule-name '(:struct rule-names))
-       (cffi:with-foreign-strings ((,rules-ptr ,rules)
-				   (,model-ptr ,model)
-				   (,layout-ptr ,layout)
-				   (,variant-ptr ,variant)
-				   (,options-ptr ,options))
-	 (setf (cffi:foreign-slot-value ,rule-name '(:struct rule-names) rules) ,rules-ptr
-	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) model) ,model-ptr
-	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) layout) ,layout-ptr
-	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) variant) ,variant-ptr
-	       (cffi:foreign-slot-value ,rule-name '(:struct rule-names) options) ,options-ptr)
+    `(with-foreign-object (,rule-name '(:struct xkb-rule-names))
+       (with-foreign-strings ((,rules-ptr ,rules)
+                              (,model-ptr ,model)
+                              (,layout-ptr ,layout)
+                              (,variant-ptr ,variant)
+                              (,options-ptr ,options))
+	 (setf (foreign-slot-value ,rule-name '(:struct xkb-rule-names) 'rules) ,rules-ptr
+	       (foreign-slot-value ,rule-name '(:struct xkb-rule-names) 'model) ,model-ptr
+	       (foreign-slot-value ,rule-name '(:struct xkb-rule-names) 'layout) ,layout-ptr
+	       (foreign-slot-value ,rule-name '(:struct xkb-rule-names) 'variant) ,variant-ptr
+	       (foreign-slot-value ,rule-name '(:struct xkb-rule-names) 'options) ,options-ptr)
 	 ,@body))))
+
+(defun xkb-keymap-get-as-string (keymap format)
+  (let ((ptr (%xkb-keymap-get-as-string keymap format)))
+    (unwind-protect
+         (foreign-string-to-lisp ptr)
+      (foreign-funcall "free"
+                       :pointer ptr
+                       :void))))
